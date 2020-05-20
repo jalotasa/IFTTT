@@ -1,0 +1,38 @@
+// Define our pins
+int photoResistor = A5;
+int photoResistorPower = A0;
+
+// The next variable defines how often to check the photoresistor's light level
+int photoResistorCheckTime = 10000;  // 10000 milliseconds is 10 seconds
+// and we also record the time we report the photoresistor status with this
+int lastPhotoResistorReport;
+char lightValue[4];   // this is a string where we will actual light value read from the photoresistor
+
+void setup() {
+  // Tell Photon if our pins are inputs or outputs
+  pinMode(photoResistor, INPUT);
+  pinMode(photoResistorPower, OUTPUT);
+
+  // Turn on power to the photoresistor
+  digitalWrite(photoResistorPower, HIGH);
+  
+  // Initialize our timer for the photoresistor using millis which is the Photon's internal clock
+  lastPhotoResistorReport = millis();
+}
+
+void loop() {
+  // check if it is time to report the photoresistor's value to the Particle web site
+  if ((millis() - lastPhotoResistorReport) >= photoResistorCheckTime) {
+      lastPhotoResistorReport = millis();   // update current time for the next time through the loop
+      int lightLevel = analogRead(photoResistor);  // we read in the photoResistor level here (value can be 0 to 4095)
+      
+      // now let's classify the light level into one of three categories
+      if (lightLevel < 500) Particle.publish("lightLevel", "dark", PRIVATE);
+      if (lightLevel >= 500 && lightLevel < 900) Particle.publish("lightLevel", "medium", PRIVATE);
+      if (lightLevel >= 900) Particle.publish("lightLevel", "bright", PRIVATE);
+      
+      // publish the actual value of the light level
+      sprintf(lightValue,"%d", lightLevel);   // this converts the value from an integer to a string for publishing
+      Particle.publish("sensorValue", lightValue, PRIVATE);
+  }
+}  // this is the end of the loop
